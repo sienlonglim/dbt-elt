@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: sales
+    description: "HDB resale records"
+    columns:
+      - name: sale_id
+        description: "Primary Key"
+        tests:
+          - unique
+          - not_null
