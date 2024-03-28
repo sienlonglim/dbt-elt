@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS hdb_prices;
+CREATE DATABASE IF NOT EXISTS hdb_prices_dev;
 
-USE hdb_prices;
+USE hdb_prices_dev;
 
 CREATE TABLE IF NOT EXISTS raw_sales (
     sale_id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
