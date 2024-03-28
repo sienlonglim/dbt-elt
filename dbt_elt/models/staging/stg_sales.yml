@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: stg_sales
+    description: "HDB resale records, each row is a sale record"
+    columns:
+      - name: sale_id
+        description: "Primary Key"
+        tests:
+          - unique
+          - not_null
+      - name: town_name
+        description: name of district
+
+

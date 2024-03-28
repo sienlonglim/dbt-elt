@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: hdb
+    description: raw
+    schema: hdb_prices_dev # by default this follows the name, unless otherwise stated
+    tables: 
+      - name: raw_sales
