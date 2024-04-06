@@ -2,7 +2,10 @@ version: 2
 
 sources:
   - name: hdb
-    description: raw
+    description: injected raw data
     schema: hdb_prices_dev # by default this follows the name, unless otherwise stated
     tables: 
       - name: raw_sales
+        description: One record per flat sold
+      - name: raw_rentals
+        description: One record per flat rented out
