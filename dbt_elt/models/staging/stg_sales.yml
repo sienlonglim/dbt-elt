@@ -4,12 +4,45 @@ models:
   - name: stg_sales
     description: "HDB resale records, each row is a sale record"
     columns:
-      - name: sale_id
-        description: "Primary Key"
+      - name: resale_date
+        description: year and month of rent approval (YYYY-mm)
         tests:
-          - unique
           - not_null
-      - name: town_name
+      - name: town
         description: name of district
+        tests:
+          - not_null
+      - name: block_number
+        description: block number (alphanumeric)
+        tests:
+          - not_null
+      - name: street_name
+        description: street name
+        tests:
+          - not_null
+      - name: storey_range
+        description: storey range
+        tests:
+          - not_null
+      - name: floor_area_sqm
+        description: floor area of unit in sqm
+        tests:
+          - not_null
+      - name: flat_model
+        description: flat model
+        tests:
+          - not_null
+      - name: lease_commence_year
+        description: year where lease commenced
+        tests:
+          - not_null
+      - name: remaining_lease_years
+        description: remaining lease in years
+        tests:
+          - not_null
+      - name: price_sold
+        description: resale price rounded to thousand
+        tests:
+          - not_null
 
 

@@ -1,13 +1,13 @@
 CREATE DATABASE IF NOT EXISTS hdb_prices_dev;
 
 USE hdb_prices_dev;
+SHOW VARIABLES LIKE 'datadir'; -- to show where the files are referenced to
 
 CREATE TABLE IF NOT EXISTS raw_sales (
-    sale_id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
-    month VARCHAR(50),
+    `month` VARCHAR(50),
     town VARCHAR(100),
     flat_type VARCHAR(100),
-    block VARCHAR(100),
+    `block` VARCHAR(100),
     street_name VARCHAR(255),
     storey_range VARCHAR(100),
     floor_area_sqm NUMERIC,
@@ -17,12 +17,25 @@ CREATE TABLE IF NOT EXISTS raw_sales (
     resale_price NUMERIC
 );
 
-SHOW VARIABLES LIKE 'datadir'; -- to show where the files are referenced to
-
-LOAD DATA INFILE 'Jan2017-Dec2023.csv' 
+LOAD DATA INFILE 'Jan2017-Dec2023_sales.csv' 
 INTO TABLE raw_sales 
 FIELDS TERMINATED BY ',' 
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
-(month, town, flat_type, block, street_name, storey_range, floor_area_sqm, flat_model, lease_commence_date, remaining_lease, resale_price);
+(`month`, town, flat_type, block, street_name, storey_range, floor_area_sqm, flat_model, lease_commence_date, remaining_lease, resale_price);
 
+CREATE TABLE IF NOT EXISTS raw_rents (
+    rent_approval_date VARCHAR(50),
+    town VARCHAR(100),
+    `block` VARCHAR(100),
+    street_name VARCHAR(255),
+    flat_type VARCHAR(100),
+    monthly_rent NUMERIC
+);
+
+LOAD DATA INFILE 'Jan2021-Mar2024_rent.csv' 
+INTO TABLE raw_rents 
+FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(rent_approval_date, town, `block`, street_name, flat_type, monthly_rent);

@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: stg_addresses
+    description: "Unique addresses"
+    columns:
+      - name: full_address
+        tests:
+          - unique
+          - not_null
