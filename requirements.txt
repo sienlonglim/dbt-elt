@@ -1,2 +1,6 @@
 dbt-mysql
 pandas
+requests-cache
+python-dotenv
+SQLAlchemy
+PyMySQL
