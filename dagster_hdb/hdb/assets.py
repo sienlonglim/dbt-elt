@@ -2,47 +2,52 @@ import json
 import os
 import requests
 import pandas as pd
-from datetime import date, datetime
-from dagster import asset 
+from datetime import date, datetime, timedelta
+from dagster import asset, AssetExecutionContext, MetadataValue, MaterializeResult
 
-@asset
-def latest_hdb_resales() -> None:
+@asset(group_name="hdb_resale_transactions")
+def previous_month_hdb_resale_transactions(context: AssetExecutionContext) -> MaterializeResult:
     '''
-    API call to retrieve current month's hdb resale prices
+    API call to retrieve previous month's hdb resale prices
     '''
     data_gov_url = "https://data.gov.sg/api/action/datastore_search?resource_id=d_8b84c4ee58e3cfc0ece0d773c8ca6abc"
     payload = {}
+
+    # Use current day to get previous month and year
     current_date = date.today()
-    year_month = f'{str(current_date.year)}-{str(current_date.month).zfill(2)}'
+    first_day = current_date.replace(day=1)
+    last_month = first_day - timedelta(days=1)
+
+    year_month = f'{str(last_month.year)}-{str(last_month.month).zfill(2)}'
     filter_dict = {"month": [year_month]}
     payload["filters"] = json.dumps(filter_dict)
     payload["limit"] = 10000
     payload["sort"] = "month desc"
     
-    print(payload)
-    response = requests.get(data_gov_url, params=payload)
-    response.raise_for_status()
-    data = response.json()
+    try:
+        response = requests.get(data_gov_url, params=payload)
+        context.log.info(f"{response.status_code} - {response.url}")
+        response.raise_for_status()
+        data = response.json()
+    except Exception as e:
+        context.log.error(f"{e}")
 
     os.makedirs("data", exist_ok=True)
     df = pd.DataFrame(data['result']['records'])
-    df.to_csv(f"data/latest_hdb_resales_{current_date}.csv")
+    if len(df) > 0:
+        df.to_csv(f"data/latest_hdb_resales_{year_month}.csv")
+        context.log.info(f"CSV file saved")
+    else:
+        context.log.info(f"Data is empty")
 
-@asset
-def latest_air_temperature_readings() -> None:
-    '''
-    API call to retrieve air temperature readings across weather stations
-    '''
-    current_time = datetime.now()
-    formatted_timestr = current_time.strftime("%Y-%m-%dT%H:%M:%S")
-    air_temperature_url = "https://api.data.gov.sg/v1/environment/air-temperature"
-    payload = {'date_time': formatted_timestr}
-    response = requests.get(air_temperature_url, params=payload)
-    response.raise_for_status()
-    data = response.json()
-    os.makedirs("data", exist_ok=True)
-    with open("data/air_temperature_readings.json", "w") as f:
-        json.dump(data, f)
+    return MaterializeResult(
+        metadata={
+            "timestamp": MetadataValue.text(str(datetime.now())),
+            "url":  MetadataValue.url(response.url),
+            "num_records": MetadataValue.int(len(df)), 
+            "preview": MetadataValue.md(df.head().to_markdown()) 
+        }
+    )
 
 # Testing purposes
 if __name__ == "__main__":
