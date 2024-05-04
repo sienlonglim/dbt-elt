@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="hdb",
-    packages=find_packages(exclude=["tutorial_tests"]),
+    packages=find_packages(exclude=["hdb_tests"]),
     install_requires=[
         "dagster",
         "dagster_duckdb_pandas",

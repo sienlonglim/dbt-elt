@@ -1,16 +1,21 @@
 import json
 import os
-import requests
 import pandas as pd
 from datetime import date, datetime, timedelta
 from dagster import asset, AssetExecutionContext, MetadataValue, MaterializeResult
+from .resources import DataGovResourceAPI
 
-@asset(group_name="hdb_resale_transactions")
-def previous_month_hdb_resale_transactions(context: AssetExecutionContext) -> MaterializeResult:
+@asset(
+    group_name = "hdb_resale_transactions",
+    metadata = {"dataset_name": "HDB Resale Transactions"}
+)
+def previous_month_hdb_resale_transactions(
+    context: AssetExecutionContext, 
+    conn: DataGovResourceAPI
+) -> MaterializeResult:
     '''
-    API call to retrieve previous month's hdb resale prices
+    Retrieve previous month's hdb resale prices
     '''
-    data_gov_url = "https://data.gov.sg/api/action/datastore_search?resource_id=d_8b84c4ee58e3cfc0ece0d773c8ca6abc"
     payload = {}
 
     # Use current day to get previous month and year
@@ -25,7 +30,10 @@ def previous_month_hdb_resale_transactions(context: AssetExecutionContext) -> Ma
     payload["sort"] = "month desc"
     
     try:
-        response = requests.get(data_gov_url, params=payload)
+        response = conn.request(
+            "d_8b84c4ee58e3cfc0ece0d773c8ca6abc",
+            params=payload
+        )
         context.log.info(f"{response.status_code} - {response.url}")
         response.raise_for_status()
         data = response.json()
@@ -48,6 +56,7 @@ def previous_month_hdb_resale_transactions(context: AssetExecutionContext) -> Ma
             "preview": MetadataValue.md(df.head().to_markdown()) 
         }
     )
+
 
 # Testing purposes
 if __name__ == "__main__":
