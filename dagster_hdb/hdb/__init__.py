@@ -15,11 +15,11 @@ from .resources import *
 all_assets = load_assets_from_modules([assets])
 
 # Jobs
-hdb_resale_transaction_job = define_asset_job("hdb_resale_transaction_job", selection=AssetSelection.all())
+hdb_resales_job = define_asset_job("hdb_resales_job", selection=AssetSelection.all())
 
 # Schedules
-hdb_resale_transaction_schedule = ScheduleDefinition(
-    job=hdb_resale_transaction_job,
+hdb_resales_schedule = ScheduleDefinition(
+    job=hdb_resales_job,
     cron_schedule="* * * * *"
 )
 
@@ -33,5 +33,5 @@ defs = Definitions(
             schema=SCHEMA
         )
     },
-    schedules=[hdb_resale_transaction_schedule]
+    schedules=[hdb_resales_schedule]
 )

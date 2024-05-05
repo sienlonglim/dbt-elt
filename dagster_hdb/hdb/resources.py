@@ -9,6 +9,9 @@ from .config import *
 import requests
 
 class DataGovResourceAPI(ConfigurableResource):
+    """
+    Resource for DataGovAPI datastore search
+    """
     user: str
 
     def request(

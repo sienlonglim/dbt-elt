@@ -8,7 +8,7 @@ from .resources import DataGovResourceAPI
 from .config import *
 
 @asset(
-    group_name = "hdb_resale_transactions",
+    group_name = "hdb_resales",
     metadata = {"dataset_name": "hdb_resales"}
 )
 def get_hdb_resale_csv(
@@ -55,7 +55,7 @@ def get_hdb_resale_csv(
 
 @asset(
     deps=[get_hdb_resale_csv],
-    group_name = "hdb_resale_transactions",
+    group_name = "hdb_resales",
     metadata = {"dataset_name": "hdb_resales"}
 )
 def create_schema_table(
@@ -72,7 +72,7 @@ def create_schema_table(
 
 @asset(
     deps=[create_schema_table],
-    group_name = "hdb_resale_transactions",
+    group_name = "hdb_resales",
     metadata = {"dataset_name": "hdb_resales"}
 )
 def resale_prices(
