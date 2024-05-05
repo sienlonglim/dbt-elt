@@ -5,7 +5,11 @@ from dagster import (
     define_asset_job,
     load_assets_from_modules
 )
-from . import assets, resources
+from dagster_duckdb import DuckDBResource
+from dagster_duckdb_pandas import DuckDBPandasIOManager
+from . import assets
+from .config import *
+from .resources import *
 
 
 all_assets = load_assets_from_modules([assets])
@@ -22,7 +26,12 @@ hdb_resale_transaction_schedule = ScheduleDefinition(
 defs = Definitions(
     assets=all_assets,
     resources={
-        "conn": resources.DataGovResourceAPI(user="my_user")
+        "conn": DataGovResourceAPI(user="my_user"),
+        "duckdb": DuckDBResource(database=DUCKDB_DIR),
+        "io_manager": DuckDBPandasIOManager(
+            database=DUCKDB_DIR, 
+            schema=SCHEMA
+        )
     },
     schedules=[hdb_resale_transaction_schedule]
 )

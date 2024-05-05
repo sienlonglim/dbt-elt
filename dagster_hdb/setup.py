@@ -5,6 +5,7 @@ setup(
     packages=find_packages(exclude=["hdb_tests"]),
     install_requires=[
         "dagster",
+        "dagster-dbt",
         "dagster_duckdb_pandas",
         "dagster_duckdb",
         "dagster-cloud",
