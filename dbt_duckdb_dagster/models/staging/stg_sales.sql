@@ -1,5 +1,6 @@
 with transform_dtypes as
 (select
+    _id as id
     `month` as resale_date,
     town,
     flat_type,
@@ -12,7 +13,7 @@ with transform_dtypes as
     cast(`floor_area_sqm` as decimal) as floor_area_sqm,
     cast(`resale_price` as decimal) as price_sold
 
-from {{ source('hdb', 'raw_sales')}}
+from {{ source('raw', 'resale_prices')}}
 )
 
 select *
