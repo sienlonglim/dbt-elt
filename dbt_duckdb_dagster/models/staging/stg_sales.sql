@@ -1,20 +1,25 @@
-with transform_dtypes as
+with resale_prices as
 (select
-    _id as id
-    `month` as resale_date,
-    town,
-    flat_type,
-    `block` as block_number,
-    street_name,
+    _id::int as id,
+    cast(strptime(month, '%Y-%m') as date) as resale_year_month,
+    -- Varchars
+    lower(town) as town,
+    case 
+        when substring(flat_type, 1, 1) in ('1', '2', '3', '4', '5')
+            then substring(flat_type, 1, 1)::decimal
+        else 5.5
+        end as flat_type,
+    block as block_number,
+    lower(street_name) as street_name,
+    lower(flat_model) as flat_model,
+    -- Numericals
     storey_range,
-    flat_model,
-    year(str_to_date(`lease_commence_date`, '%Y')) as lease_commence_year,
-    cast(substr(remaining_lease, 1, 2) as int) as remaining_lease_years,
-    cast(`floor_area_sqm` as decimal) as floor_area_sqm,
-    cast(`resale_price` as decimal) as price_sold
-
+    lease_commence_date::int as lease_commence_year,
+    substring(remaining_lease, 1, 2)::int as remaining_lease_years,
+    floor_area_sqm::decimal as floor_area_sqm,
+    resale_price:: decimal as resale_price
 from {{ source('raw', 'resale_prices')}}
 )
 
 select *
-from transform_dtypes
+from resale_prices

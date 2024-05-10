@@ -2,9 +2,10 @@ version: 2
 
 models:
   - name: stg_sales
+    schema: staging
     description: "HDB resale records, each row is a sale record"
     columns:
-      - name: resale_date
+      - name: resale_year_month
         description: year and month of rent approval (YYYY-mm)
         tests:
           - not_null
@@ -40,7 +41,7 @@ models:
         description: remaining lease in years
         tests:
           - not_null
-      - name: price_sold
+      - name: resale_price
         description: resale price rounded to thousand
         tests:
           - not_null

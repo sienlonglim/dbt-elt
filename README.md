@@ -5,3 +5,4 @@ This project aims to build a modern data pipeline with CI/CD practices using
    - Orchestration of data extraction and loading
 2. Dbt
    - Data transformation
+3. DuckDB

@@ -1,3 +1,4 @@
+data/
 logs/
 tmpt*
 .logs_queue
