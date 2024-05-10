@@ -9,11 +9,12 @@ from dagster_duckdb import DuckDBResource
 from dagster_duckdb_pandas import DuckDBPandasIOManager
 from .hdb import hdb_assets
 from .weather import weather_assets
+from .dbt import dbt_assets
 from .config import *
 from .resources import *
 
 
-all_assets = load_assets_from_modules([hdb_assets, weather_assets])
+all_assets = load_assets_from_modules([hdb_assets, weather_assets, dbt_assets])
 
 # Jobs
 hdb_resales_job = define_asset_job(
@@ -52,7 +53,8 @@ defs = Definitions(
         "io_manager": DuckDBPandasIOManager(
             database=DUCKDB_DIR, 
             schema=SCHEMA
-        )
+        ),
+        "dbt": DbtCliResource(project_dir=DBT_PROJECT_DIR)
     },
     schedules=[hdb_resales_schedule, weather_air_temperature_schedule]
 )

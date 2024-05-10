@@ -1,12 +1,7 @@
 from dagster import ConfigurableResource
-# from dagster_dbt import (
-#     DagsterDbtTranslator,
-#     DbtCliResource,
-#     dbt_assets,
-#     get_asset_key_for_model,
-# )
-from .config import *
+from dagster_dbt import DbtCliResource
 import requests
+from .config import *
 
 class DataGovResourceAPI(ConfigurableResource):
     """
@@ -25,5 +20,3 @@ class DataGovResourceAPI(ConfigurableResource):
             headers={"user-agent": "dagster"},
             params=params,
         )
-    
-# dbt_resource = DbtCliResource(project_dir=DBT_PROJECT_DIR)
