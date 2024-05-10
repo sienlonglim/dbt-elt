@@ -1,8 +1,8 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="hdb",
-    packages=find_packages(exclude=["hdb_tests"]),
+    name="dagster_orchestration",
+    packages=find_packages(exclude=["dagster_orchestration_tests"]),
     install_requires=[
         "dagster",
         "dagster-dbt",

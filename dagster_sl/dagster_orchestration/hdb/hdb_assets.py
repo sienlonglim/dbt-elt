@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 from dagster import asset, AssetExecutionContext, MetadataValue, MaterializeResult
 from dagster_duckdb import DuckDBResource
-from .resources import DataGovResourceAPI
+from ..resources import DataGovResourceAPI
 from .config import *
 
 @asset(
@@ -19,7 +19,7 @@ def get_hdb_resale_csv(
     Retrieve hdb resale prices and save as a csv
     '''
     payload = {}
-    filter_dict = {"month": [YEAR_MONTH]}
+    filter_dict = {"month": [PREV_YEAR_MONTH]}
     payload["filters"] = json.dumps(filter_dict)
     payload["limit"] = 10000
     payload["sort"] = "month desc"
@@ -37,8 +37,9 @@ def get_hdb_resale_csv(
 
     os.makedirs("data", exist_ok=True)
     df = pd.DataFrame(data['result']['records'])
+    df['date_ingested'] = pd.Timestamp("now")
     if len(df) > 0:
-        df.to_csv(f"data/latest_hdb_resales_{YEAR_MONTH}.csv")
+        df.to_csv(f"data/latest_hdb_resales_{PREV_YEAR_MONTH}.csv")
         context.log.info(f"CSV file saved.")
     else:
         context.log.info(f"Data is empty.")
@@ -82,7 +83,7 @@ def resale_prices(
     Use DuckDB PandasIOManager to save pandas table directly into DuckDB as str types only
     '''
     df = pd.read_csv(
-        f"data/latest_hdb_resales_{YEAR_MONTH}.csv",
+        f"data/latest_hdb_resales_{PREV_YEAR_MONTH}.csv",
         index_col=0,
         dtype=object
     )
