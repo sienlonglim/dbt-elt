@@ -1,49 +1,57 @@
-import json
-import os
-import requests
+import time
 import pandas as pd
 from datetime import datetime, timedelta
 from dagster import asset, AssetExecutionContext, MetadataValue, MaterializeResult
+from ..resources import CustomConfig, DataGovLiveAPI, CustomDuckDBResource
 from .config import *
 
 @asset(
-    group_name = "weather_temperature",
-    metadata = {"dataset_name": "weather_temperature"}
+    group_name = "weather_air_temperatures",
+    metadata = {"dataset_name": "weather_air_temperatures"},
+    compute_kind="Schema"
 )
-def latest_air_temperature_readings(context: AssetExecutionContext) -> MaterializeResult:
+def create_schema_and_table(
+    context: AssetExecutionContext,
+    duckdb: CustomDuckDBResource,
+    main_config: CustomConfig
+) -> None:
     '''
-    API call to retrieve air temperature readings across weather stations
+    Creates table for raw tables
     '''
-    current_time = datetime.now()
-    formatted_timestr = current_time.strftime("%Y-%m-%dT%H:%M:%S")
-    air_temperature_url = "https://api.data.gov.sg/v1/environment/air-temperature"
-    payload = {'date_time': formatted_timestr}
-
-    try:
-        response = requests.get(air_temperature_url, params=payload)
-        context.log.info(f"{response.status_code} - {response.url}")
-        response.raise_for_status()
-        data = response.json()
-    except Exception as e:
-        context.log.error(f"{e}")
-
-    os.makedirs("data", exist_ok=True)
-    with open("data/air_temperature_readings.json", "w") as f:
-        json.dump(data, f)
-    context.log.info(f"JSON file saved")
-
-    return MaterializeResult(
-        metadata={
-            "timestamp": MetadataValue.text(str(datetime.now())),
-            "url":  MetadataValue.url(response.url)
-        }
-    )
+    with duckdb.get_connection() as conn:
+        conn.execute("create schema if not exists raw;")
+        conn.execute(
+            f"""
+            create table if not exists {main_config.SCHEMA}.air_temperatures (
+                datetime DATETIME not null,
+                station_id VARCHAR not null,
+                value DECIMAL not null
+            );
+            """)
+        conn.execute(
+            f"""
+            create table if not exists {main_config.SCHEMA}.air_temperature_stations (
+                id VARCHAR not null,
+                device_id VARCHAR not null,
+                name VARCHAR not null,
+                location_latitude DECIMAL not null,
+                location_longitude DECIMAL not null,
+                last_date DATETIME not null
+            );
+            """)
 
 @asset(
-    group_name = "weather_temperature",
-    metadata = {"dataset_name": "weather_temperature"}
+    deps=["create_schema_and_table"],
+    group_name = "weather_air_temperatures",
+    metadata = {"dataset_name": "weather_air_temperatures"},
+    compute_kind="Request"
 )
-def historical_half_hourly_air_temperature_readings(context: AssetExecutionContext) -> MaterializeResult:
+def get_historical_station_metadata(
+    context: AssetExecutionContext,
+    datagov_api_conn: DataGovLiveAPI,
+    duckdb: CustomDuckDBResource,
+    main_config: CustomConfig
+) -> MaterializeResult:
     '''
     API call to retrieve all half hourly air temperature readings across weather stations
     '''
@@ -51,29 +59,114 @@ def historical_half_hourly_air_temperature_readings(context: AssetExecutionConte
     end_date = datetime.strptime(HISTORICAL_END_DATE, "%Y-%m-%d")
     curr_time = start_date
     df_list = []
-    while (curr_time <= end_date):
+    while (curr_time < end_date):
         formatted_timestr = curr_time.strftime("%Y-%m-%dT%H:%M:%S")
-        air_temperature_url = "https://api.data.gov.sg/v1/environment/air-temperature"
         payload = {'date_time': formatted_timestr}
-        try:
-            response = requests.get(air_temperature_url, params=payload)
-            response.raise_for_status()
-            data = response.json()
-            df_readings = pd.DataFrame(data['items'][0]['readings'])
-            df_readings['datetime'] = pd.Timestamp(formatted_timestr)
-            df_readings = df_readings.set_index('datetime')
-            df_list.append(df_readings)
-        except Exception as e:
-            context.log.error(f"{e}")
-        curr_time += timedelta(minutes=30)
+        response = datagov_api_conn.request(
+            api_id="air_temperature", 
+            params=payload
+        )
+        context.log.info(response.url)
+        data = response.json()
+        df_readings = pd.json_normalize(data['metadata']['stations'])
+        df_readings["last_date"] = pd.Timestamp(formatted_timestr)
+        df_list.append(df_readings)
 
-    os.makedirs("data", exist_ok=True)
+        curr_time += timedelta(days=1)
+
     df = pd.concat(df_list)
-    df.to_csv(f"data/half_hourly_air_temp_{HISTORICAL_START_DATE}_{HISTORICAL_END_DATE}.csv")
-    context.log.info(f"CSV file saved")
+    df = df.drop_duplicates(
+        subset=df.columns[:-1],
+        keep="last")
+    df.columns = [col.replace(".", "_") for col in df.columns]
+
+    with duckdb.get_connection() as conn:
+        conn.execute(
+            f"""
+            create or replace table {main_config.SCHEMA}.air_temperature_stations
+            as (
+                select * 
+                from df
+                union by name
+                select *
+                from {main_config.SCHEMA}.air_temperature_stations 
+            )
+            """
+        )
 
     return MaterializeResult(
         metadata={
-            "timestamp": MetadataValue.text(str(datetime.now()))
+            "timestamp": MetadataValue.text(str(datetime.now())),
+            "len": MetadataValue.int(len(df))
         }
     )
+
+@asset(
+    deps=["create_schema_and_table"],
+    group_name = "weather_air_temperatures",
+    metadata = {"dataset_name": "weather_air_temperatures"},
+    compute_kind="Request"
+)
+def get_historical_half_hourly_air_temperature_readings(
+    context: AssetExecutionContext,
+    datagov_api_conn: DataGovLiveAPI,
+    duckdb: CustomDuckDBResource,
+    main_config: CustomConfig
+) -> MaterializeResult:
+    '''
+    API call to retrieve all half hourly air temperature readings across weather stations
+    '''
+    start_date = datetime.strptime(HISTORICAL_START_DATE, "%Y-%m-%d")
+    end_date = datetime.strptime(HISTORICAL_END_DATE, "%Y-%m-%d")
+    curr_time = start_date
+    df_list = []
+    call_count = 0
+    while (curr_time < end_date):
+        if call_count > 500:
+            context.log.info("Cooldown for 60s")
+            time.sleep(60)
+            call_count = 0
+        formatted_timestr = curr_time.strftime("%Y-%m-%dT%H:%M:%S")
+        payload = {'date_time': formatted_timestr}
+        response = datagov_api_conn.request(
+            api_id="air_temperature", 
+            params=payload
+        )
+        context.log.info(response.url)
+        data = response.json()
+        df_readings = pd.DataFrame(data['items'][0]['readings'])
+        timestamps = pd.Timestamp(formatted_timestr)
+        df_readings.insert(
+            loc=0,
+            column="datetime",
+            value=timestamps
+        )
+        df_list.append(df_readings)
+
+        curr_time += timedelta(minutes=30)
+        call_count += 1
+
+    df = pd.concat(df_list)
+
+    with duckdb.get_connection() as conn:
+        conn.execute(
+            f"""
+            create or replace table {main_config.SCHEMA}.air_temperatures
+            as (
+                select * 
+                from df
+                union by name
+                select *
+                from {main_config.SCHEMA}.air_temperatures 
+            )
+            """
+        )
+
+    return MaterializeResult(
+        metadata={
+            "timestamp": MetadataValue.text(str(datetime.now())),
+            "len": MetadataValue.int(len(df))
+        }
+    )
+
+

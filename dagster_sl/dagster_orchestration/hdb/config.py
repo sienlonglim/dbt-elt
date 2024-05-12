@@ -6,3 +6,4 @@ def get_previous_month_date():
     return previous_month_date
 
 PREV_YEAR_MONTH = f'{str(get_previous_month_date().year)}-{str(get_previous_month_date().month).zfill(2)}'
+

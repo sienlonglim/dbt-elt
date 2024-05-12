@@ -3,8 +3,7 @@ import os
 import pandas as pd
 from datetime import datetime
 from dagster import asset, AssetExecutionContext, MetadataValue, MaterializeResult
-from dagster_duckdb import DuckDBResource
-from ..resources import DataGovResourceAPI
+from ..resources import DataGovResourceAPI, CustomDuckDBResource
 from .config import *
 
 @asset(
@@ -13,7 +12,7 @@ from .config import *
 )
 def get_hdb_resale_csv(
     context: AssetExecutionContext, 
-    conn: DataGovResourceAPI
+    datagov_resource_conn: DataGovResourceAPI
 ) -> MaterializeResult:
     '''
     Retrieve hdb resale prices and save as a csv
@@ -24,16 +23,12 @@ def get_hdb_resale_csv(
     payload["limit"] = 10000
     payload["sort"] = "month desc"
     
-    try:
-        response = conn.request(
-            "d_8b84c4ee58e3cfc0ece0d773c8ca6abc",
-            params=payload
-        )
-        context.log.info(f"{response.status_code} - {response.url}")
-        response.raise_for_status()
-        data = response.json()
-    except Exception as e:
-        context.log.error(f"{e}")
+
+    response = datagov_resource_conn.request(
+        resource_id="hdb_resale_prices",
+        params=payload
+    )
+    data = response.json()
 
     os.makedirs("data", exist_ok=True)
     df = pd.DataFrame(data['result']['records'])
@@ -61,7 +56,7 @@ def get_hdb_resale_csv(
 )
 def create_schema_table(
     context: AssetExecutionContext, 
-    duckdb: DuckDBResource
+    duckdb: CustomDuckDBResource
 ) -> None:
     '''
     Create schema if it do not exists
@@ -88,5 +83,3 @@ def resale_prices(
         dtype=object
     )
     context.log.info(f"Reading csv file, total rows present: {len(df)}")
-
-    return df
