@@ -1,10 +1,14 @@
+data/
 logs/
 tmpt*
+.*
+!.github
+
+# Dagster
 .logs_queue
 .nux
 .telemetry
-schedules
-storage
+dagster_artifacts
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,8 +1,0 @@
-version: 2
-
-sources:
-  - name: raw
-    description: injected raw data
-    tables: 
-      - name: resale_prices
-        description: Resale flat transactions, one record per flat sold
