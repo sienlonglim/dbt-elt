@@ -1,0 +1,35 @@
+dbt_mysql:
+  outputs:
+    dev:
+      driver: MySQL ODBC 8.0 ANSI Driver
+      password: "{{ env_var('MARIADB_PASSWORD') }}"
+      port: 3306
+      schema: hdb_prices_dev
+      server: "{{ env_var('MARIADB_HOST') }}"
+      type: mariadb
+      username: "{{ env_var('MARIADB_USER') }}"
+    prod:
+      driver: MySQL ODBC 8.0 ANSI Driver
+      password: "{{ env_var('MARIADB_PASSWORD') }}"
+      port: 3306
+      schema: hdb_prices_prod
+      server: "{{ env_var('MARIADB_HOST') }}"
+      type: mariadb
+      username: "{{ env_var('MARIADB_USER') }}"
+  target: dev
+
+dbt_elt:
+  outputs:
+    dev:
+      type: duckdb
+      schema:
+      path: dev.duckdb
+      threads: 4
+
+    prod:
+      type: duckdb
+      schema:
+      path: prod.duckdb
+      threads: 4
+
+  target: dev
