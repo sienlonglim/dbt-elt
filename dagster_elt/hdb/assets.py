@@ -1,44 +1,34 @@
-import json
-import os
 from datetime import datetime
 
 import pandas as pd
 from dagster import (
     asset,
-    AssetExecutionContext,
+    get_dagster_logger,
     MetadataValue,
     MaterializeResult
 )
 
-from ..dagster_utils.resources import (
-    DataGovAPI,
-    CustomDuckDBResource
-)
 from .ops import op_get_hdb_resale_records_json
-
-from .config import PREV_YEAR_MONTH
 
 
 @asset(
     group_name="hdb_resales",
     metadata={"dataset_name": "hdb_resales"}
 )
-def get_hdb_resale_records_S3(
-    context: AssetExecutionContext, 
-    datagov_resource_conn: DataGovAPI
-) -> MaterializeResult:
+def hdb_resale_S3_files() -> MaterializeResult:
     '''
     Retrieve hdb resale prices and save as a csv
     '''
+    logger = get_dagster_logger()
     data = op_get_hdb_resale_records_json()
     df = pd.DataFrame(data['result']['records'])
     if len(df) < 1:
-        context.log.info(f"Data is empty.")
+        logger.info("Data is empty.")
 
     return MaterializeResult(
         metadata={
             "timestamp": MetadataValue.text(str(datetime.now())),
-            "num_records": MetadataValue.int(len(df)), 
+            "num_records": MetadataValue.int(len(df)),
             "preview": MetadataValue.md(df.head().to_markdown())
         }
     )
@@ -51,7 +41,7 @@ def get_hdb_resale_records_S3(
 # )
 # def create_schema_table(
 #     context: AssetExecutionContext, 
-#     duckdb: CustomDuckDBResource
+#     duckdb: DuckDBResource
 # ) -> None:
 #     '''
 #     Create schema if it do not exists

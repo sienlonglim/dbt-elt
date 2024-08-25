@@ -4,15 +4,15 @@ import pandas as pd
 from datetime import datetime, timedelta
 from dagster import (
     asset,
-    AssetExecutionContext,
+    get_dagster_logger,
     MetadataValue,
     MaterializeResult
 )
+from dagster_duckdb import DuckDBResource
 
 from ..dagster_utils.resources import (
-    DbtDuckDbConfig,
+    DuckDbConfig,
     DataGovAPI,
-    CustomDuckDBResource
 )
 from .config import (
     HISTORICAL_START_DATE,
@@ -26,9 +26,8 @@ from .config import (
     compute_kind="Schema"
 )
 def create_schema_and_table(
-    context: AssetExecutionContext,
-    duckdb: CustomDuckDBResource,
-    main_config: DbtDuckDbConfig
+    duckdb_config: DuckDbConfig,
+    duckdb: DuckDBResource
 ) -> None:
     '''
     Creates table for raw tables
@@ -37,7 +36,7 @@ def create_schema_and_table(
         conn.execute("create schema if not exists raw;")
         conn.execute(
             f"""
-            create table if not exists {main_config.SCHEMA}.air_temperatures (
+            create table if not exists {duckdb_config.database_schema}.air_temperatures (
                 datetime DATETIME not null,
                 station_id VARCHAR not null,
                 value DECIMAL not null
@@ -45,7 +44,7 @@ def create_schema_and_table(
             """)
         conn.execute(
             f"""
-            create table if not exists {main_config.SCHEMA}.air_temperature_stations (
+            create table if not exists {duckdb_config.database_schema}.air_temperature_stations (
                 id VARCHAR not null,
                 device_id VARCHAR not null,
                 name VARCHAR not null,
@@ -55,21 +54,22 @@ def create_schema_and_table(
             );
             """)
 
+
 @asset(
     deps=["create_schema_and_table"],
-    group_name = "weather_air_temperatures",
-    metadata = {"dataset_name": "weather_air_temperatures"},
+    group_name="weather_air_temperatures",
+    metadata={"dataset_name": "weather_air_temperatures"},
     compute_kind="Request"
 )
 def get_historical_station_metadata(
-    context: AssetExecutionContext,
-    datagov_api_conn: DbtDuckDbConfig,
-    duckdb: CustomDuckDBResource,
-    main_config: DbtDuckDbConfig
+    duckdb_config: DuckDbConfig,
+    datagov_api: DataGovAPI,
+    duckdb: DuckDBResource
 ) -> MaterializeResult:
     '''
     API call to retrieve all half hourly air temperature readings across weather stations
     '''
+    logger = get_dagster_logger()
     start_date = datetime.strptime(HISTORICAL_START_DATE, "%Y-%m-%d")
     end_date = datetime.strptime(HISTORICAL_END_DATE, "%Y-%m-%d")
     curr_time = start_date
@@ -77,11 +77,11 @@ def get_historical_station_metadata(
     while (curr_time < end_date):
         formatted_timestr = curr_time.strftime("%Y-%m-%dT%H:%M:%S")
         payload = {'date_time': formatted_timestr}
-        response = datagov_api_conn.request(
-            api_id="air_temperature", 
+        response = datagov_api.request(
+            api_id="air_temperature",
             params=payload
         )
-        context.log.info(response.url)
+        logger.info(response.url)
         data = response.json()
         df_readings = pd.json_normalize(data['metadata']['stations'])
         df_readings["last_date"] = pd.Timestamp(formatted_timestr)
@@ -98,13 +98,13 @@ def get_historical_station_metadata(
     with duckdb.get_connection() as conn:
         conn.execute(
             f"""
-            create or replace table {main_config.SCHEMA}.air_temperature_stations
+            create or replace table {duckdb_config.database_schema}.air_temperature_stations
             as (
                 select * 
                 from df
                 union by name
                 select *
-                from {main_config.SCHEMA}.air_temperature_stations 
+                from {duckdb_config.database_schema}.air_temperature_stations 
             )
             """
         )
@@ -116,6 +116,7 @@ def get_historical_station_metadata(
         }
     )
 
+
 @asset(
     deps=["create_schema_and_table"],
     group_name="weather_air_temperatures",
@@ -123,14 +124,14 @@ def get_historical_station_metadata(
     compute_kind="Request"
 )
 def get_historical_half_hourly_air_temperature_readings(
-    context: AssetExecutionContext,
-    datagov_api_conn: DataGovAPI,
-    duckdb: CustomDuckDBResource,
-    main_config: DbtDuckDbConfig
+    duckdb_config: DuckDbConfig,
+    datagov_api: DataGovAPI,
+    duckdb: DuckDBResource
 ) -> MaterializeResult:
     '''
     API call to retrieve all half hourly air temperature readings across weather stations
     '''
+    logger = get_dagster_logger()
     start_date = datetime.strptime(HISTORICAL_START_DATE, "%Y-%m-%d")
     end_date = datetime.strptime(HISTORICAL_END_DATE, "%Y-%m-%d")
     curr_time = start_date
@@ -138,16 +139,16 @@ def get_historical_half_hourly_air_temperature_readings(
     call_count = 0
     while (curr_time < end_date):
         if call_count > 500:
-            context.log.info("Cooldown for 60s")
+            logger.info("Cooldown for 60s")
             time.sleep(60)
             call_count = 0
         formatted_timestr = curr_time.strftime("%Y-%m-%dT%H:%M:%S")
         payload = {'date_time': formatted_timestr}
-        response = datagov_api_conn.request(
+        response = datagov_api.request(
             api_id="air_temperature", 
             params=payload
         )
-        context.log.info(response.url)
+        logger.info(response.url)
         data = response.json()
         df_readings = pd.DataFrame(data['items'][0]['readings'])
         timestamps = pd.Timestamp(formatted_timestr)
@@ -166,13 +167,13 @@ def get_historical_half_hourly_air_temperature_readings(
     with duckdb.get_connection() as conn:
         conn.execute(
             f"""
-            create or replace table {main_config.SCHEMA}.air_temperatures
+            create or replace table {duckdb_config.database_schema}.air_temperatures
             as (
                 select * 
                 from df
                 union by name
                 select *
-                from {main_config.SCHEMA}.air_temperatures 
+                from {duckdb_config.database_schema}.air_temperatures 
             )
             """
         )

@@ -7,30 +7,27 @@ from typing import Any
 import boto3
 from dagster import (
     ConfigurableResource,
-    EnvVar
+    InitResourceContext
 )
-from dagster_duckdb import DuckDBResource
+from pydantic import PrivateAttr
 
 from .constants import API_RESOURCE_MAPPER
+
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(message)s")
 log = logging.getLogger()
 
 
-class DbtDuckDbConfig(ConfigurableResource):
-    DUCKDB_TARGET: str
-    DBT_PROJECT_DIR: str
-    DBT_MANIFEST_PATH: str
-    DUCKDB_DIR: str
-    DUCKDB_SCHEMA: str
+class DuckDbConfig(ConfigurableResource):
+    target_database: str
+    directory: str
+    database_schema: str
 
 
 class DataGovAPI(ConfigurableResource):
     """
     Resource for DataGovAPI
     """
-    user: str
-
     def request(
         self,
         resource_name: str,
@@ -44,21 +41,22 @@ class DataGovAPI(ConfigurableResource):
         return response
 
 
-class CustomDuckDBResource(DuckDBResource):
-    user: str
-
-
 class AmazonS3(ConfigurableResource):
-    def __init__(
+    _aws_access_key_id: str = PrivateAttr()
+    _aws_secret_access_key: str = PrivateAttr()
+    region_name: str
+
+    def setup_for_execution(
         self,
+        context: InitResourceContext
     ) -> None:
         self.client = boto3.client(
             's3',
-            aws_access_key_id=EnvVar("AWS_ACCESS_KEY_ID").get_value(),
-            aws_secret_access_key=EnvVar("AWS_SECRET_ACCESS_KEY").get_value(),
-            region_name=EnvVar("REGION").get_value()
+            aws_access_key_id=self._aws_access_key_id,
+            aws_secret_access_key=self._aws_secret_access_key,
+            region_name=self.region_name
         )
-        log.info("Connected to S3")
+        # context.info("Connected to S3")
 
     def list_buckets(
         self,
