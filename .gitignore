@@ -8,7 +8,8 @@ tmpt*
 .logs_queue
 .nux
 .telemetry
-dagster_artifacts
+dagster_elt/dagster_artifacts/*
+!dagster_elt/dagster_artifacts/dagster.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
