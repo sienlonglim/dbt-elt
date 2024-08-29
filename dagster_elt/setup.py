@@ -9,11 +9,14 @@ setup(
         "dagster_duckdb_pandas",
         "dagster_duckdb",
         "dagster-cloud",
+        "dagster-aws",
         "Faker==18.4.0",
         "matplotlib",
         "pandas",
         "requests",
         "boto3"
     ],
-    extras_require={"dev": ["dagster-webserver", "pytest"]},
+    extras_require={
+        "dev": ["dagster-webserver", "pytest"]
+    },
 )

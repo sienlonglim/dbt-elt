@@ -7,11 +7,18 @@ from typing import Any
 import boto3
 from dagster import (
     ConfigurableResource,
-    InitResourceContext
+    InitResourceContext,
+    EnvVar
 )
-from pydantic import PrivateAttr
+from dagster_dbt import DbtCliResource
+from dagster_aws.s3 import S3Resource
+from dagster_duckdb import DuckDBResource
 
-from .constants import API_RESOURCE_MAPPER
+from .constants import (
+    API_RESOURCE_MAPPER,
+    DBT_PROJECT_DIR,
+    DUCKDB_DIR
+)
 
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(message)s")
@@ -41,9 +48,9 @@ class DataGovAPI(ConfigurableResource):
         return response
 
 
-class AmazonS3(ConfigurableResource):
-    _aws_access_key_id: str = PrivateAttr()
-    _aws_secret_access_key: str = PrivateAttr()
+class CustomAmazonS3(ConfigurableResource):
+    _aws_access_key_id: str
+    _aws_secret_access_key: str
     region_name: str
 
     def setup_for_execution(
@@ -56,7 +63,7 @@ class AmazonS3(ConfigurableResource):
             aws_secret_access_key=self._aws_secret_access_key,
             region_name=self.region_name
         )
-        # context.info("Connected to S3")
+        log.info("Connected to S3")
 
     def list_buckets(
         self,
@@ -79,3 +86,18 @@ class AmazonS3(ConfigurableResource):
             Body=object
         )
         log.info(f"Uploaded {filename} successfully")
+
+
+datagov_api_resource = DataGovAPI()
+duckdb_resource = DuckDBResource(database=DUCKDB_DIR)
+dbt_resource = DbtCliResource(project_dir=DBT_PROJECT_DIR)
+s3_resource = S3Resource(
+    aws_access_key_id=EnvVar("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=EnvVar("AWS_SECRET_ACCESS_KEY"),
+    region_name=EnvVar("REGION")
+)
+# s3_resource = CustomAmazonS3(
+#     _aws_access_key_id=EnvVar("AWS_ACCESS_KEY_ID"),
+#     _aws_secret_access_key=EnvVar("AWS_SECRET_ACCESS_KEY"),
+#     region_name=EnvVar("REGION")
+# )

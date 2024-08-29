@@ -23,7 +23,7 @@ from .config import (
 @asset(
     group_name="weather_air_temperatures",
     metadata={"dataset_name": "weather_air_temperatures"},
-    compute_kind="Schema"
+    compute_kind="duckdb"
 )
 def create_schema_and_table(
     duckdb_config: DuckDbConfig,
