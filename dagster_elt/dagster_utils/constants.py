@@ -13,3 +13,5 @@ API_RESOURCE_MAPPER = {
     "hdb_resale_prices": "https://data.gov.sg/api/action/datastore_search?resource_id=d_8b84c4ee58e3cfc0ece0d773c8ca6abc",
     "air_temperature": "https://api.data.gov.sg/v1/environment/air-temperature"
 }
+
+AMAZON_S3_BUCKET_PROJECT_FOLDER = "dagster-elt"

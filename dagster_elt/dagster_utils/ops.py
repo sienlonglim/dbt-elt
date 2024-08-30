@@ -3,14 +3,9 @@ from typing import Any
 
 from dagster import (
     op,
-    get_dagster_logger,
-    OpExecutionContext
+    get_dagster_logger
 )
 from dagster_aws.s3 import S3Resource
-
-# from .resources import (
-#     AmazonS3
-# )
 
 
 @op
@@ -44,10 +39,3 @@ def op_list_S3_objects(
         Prefix=key
     )
     return [entry['Key'] for entry in response.get('Contents')]
-
-
-# @op
-# def op_list_buckets(
-#     s3_resource: AmazonS3
-# ) -> None:
-#     s3_resource.list_buckets()
