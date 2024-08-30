@@ -2,7 +2,8 @@ from dagster import job
 
 from .ops import (
     op_check_S3_file_coverage,
-    op_extract_and_upload
+    op_extract_and_upload,
+    create_raw_schema
 )
 
 
@@ -14,8 +15,13 @@ def job_S3_hdb_resale_records_json():
     list_of_year_months_to_extract = op_check_S3_file_coverage()
     op_extract_and_upload(list_of_year_months_to_extract)
 
-# df = pd.DataFrame(data['result']['records'])
 
+@job
+def job_copyinto_duckdb():
+    create_raw_schema()
+
+
+# df = pd.DataFrame(data['result']['records'])
 
 # @asset(
 #     deps=[create_schema_table],
