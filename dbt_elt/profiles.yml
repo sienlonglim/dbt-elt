@@ -1,5 +1,6 @@
 dbt_mysql:
-  outputs:
+  target: dev  # Default target
+  outputs:  # Target options
     dev:
       driver: MySQL ODBC 8.0 ANSI Driver
       password: "{{ env_var('MARIADB_PASSWORD') }}"
@@ -16,9 +17,10 @@ dbt_mysql:
       server: "{{ env_var('MARIADB_HOST') }}"
       type: mariadb
       username: "{{ env_var('MARIADB_USER') }}"
-  target: dev
+
 
 dbt_elt:
+  target: dev
   outputs:
     dev:
       type: duckdb
@@ -32,4 +34,30 @@ dbt_elt:
       path: prod.duckdb
       threads: 4
 
+
+mother_duck:
   target: dev
+  outputs:
+    dev:
+      type: duckdb
+      schema:
+      path: 'md:dev_dbt_elt'
+      threads: 16
+      extensions: 
+        - httpfs
+      settings:
+        s3_region: "{{ env_var('REGION') }}"
+        s3_access_key_id: "{{ env_var('AWS_ACCESS_KEY_ID') }}"
+        s3_secret_access_key: "{{ env_var('AWS_SECRET_ACCESS_KEY') }}"
+    
+    prod:
+      type: duckdb
+      schema:
+      path: 'md:prod_dbt_elt'
+      threads: 16
+      extensions: 
+        - httpfs
+      settings:
+        s3_region: "{{ env_var('REGION') }}"
+        s3_access_key_id: "{{ env_var('AWS_ACCESS_KEY_ID') }}"
+        s3_secret_access_key: "{{ env_var('AWS_SECRET_ACCESS_KEY') }}"

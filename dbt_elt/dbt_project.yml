@@ -6,7 +6,7 @@ name: 'dbt_duckdb_dagster'
 version: '1.0.0'
 
 # This setting configures which "profile" dbt uses for this project.
-profile: 'dbt_duckdb_dagster'
+profile: 'mother_duck'
 
 
 model-paths: ["models"]
