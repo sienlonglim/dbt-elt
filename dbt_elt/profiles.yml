@@ -26,13 +26,13 @@ dbt_elt:
       type: duckdb
       schema:
       path: dev.duckdb
-      threads: 4
+      threads: 1
 
     prod:
       type: duckdb
       schema:
       path: prod.duckdb
-      threads: 4
+      threads: 1
 
 
 mother_duck:
@@ -40,9 +40,9 @@ mother_duck:
   outputs:
     dev:
       type: duckdb
-      schema:
-      path: 'md:dev_dbt_elt'
-      threads: 16
+      schema: dev_sl
+      path: "md:my_db?motherduck_token={{env_var('MOTHERDUCK_TOKEN')}}"
+      threads: 1
       extensions: 
         - httpfs
       settings:
@@ -52,9 +52,9 @@ mother_duck:
     
     prod:
       type: duckdb
-      schema:
-      path: 'md:prod_dbt_elt'
-      threads: 16
+      schema: prod
+      path:  "md:my_db?motherduck_token={{env_var('MOTHERDUCK_TOKEN')}}"
+      threads: 1
       extensions: 
         - httpfs
       settings:
