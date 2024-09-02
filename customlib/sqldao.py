@@ -7,7 +7,10 @@ from sqlalchemy import create_engine
 
 
 class DatabaseAccessObject():
-    def __init__(self, db: str):
+    def __init__(
+        self,
+        db: str
+    ):
         self.db = db.upper()
         if db == 'MARIADB':
             self.con = create_engine(
@@ -18,12 +21,19 @@ class DatabaseAccessObject():
         elif db == 'DUCKDB':
             self.con = duckdb.connect(
                 os.environ['DUCKDB_DIR'],
-                config={'threads': 4}
+                config={'threads': 1}
             )
+        elif db == 'MD':
+            self.con = duckdb.connect(
+                f"md:?motherduck_token={os.environ['MOTHERDUCK_TOKEN']}",
+                config={'threads': 1}
+            )
+        else:
+            raise KeyError("Invalid db option chosen")
 
     def query_db(self, query):
         if isinstance(self.con, sqlalchemy.engine.base.Engine):
             df = pd.read_sql(query, con=self.con)
-        elif isinstance(self.con, duckdb):
+        else:
             df = self.con.sql(query)
         return df
