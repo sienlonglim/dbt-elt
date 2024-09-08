@@ -5,5 +5,5 @@ sources:
     description: ingested raw data
     schema: raw
     tables: 
-      - name: resale_prices
+      - name: raw__hdb_resale_records
         description: Resale flat transactions, one record per flat sold

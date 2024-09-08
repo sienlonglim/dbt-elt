@@ -33,7 +33,9 @@ def create_schema_and_table(
     Creates table for raw tables
     '''
     with duckdb.get_connection() as conn:
-        conn.execute("create schema if not exists raw;")
+        conn.execute("create database if not exists 'raw';")
+        conn.execute("set database 'raw';")
+        conn.execute(f"create schema if not exists '{duckdb_config.database_schema}';")
         conn.execute(
             f"""
             create table if not exists {duckdb_config.database_schema}.air_temperatures (

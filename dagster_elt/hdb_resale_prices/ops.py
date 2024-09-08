@@ -2,16 +2,21 @@ import json
 import re
 from typing import Any
 
-from dagster_duckdb import DuckDBResource
 from dagster_aws.s3 import S3Resource
 from dagster import (
     op,
     OpExecutionContext,
     EnvVar,
-    get_dagster_logger
+    get_dagster_logger,
+    In,
+    Nothing
 )
 
-from ..dagster_utils.resources import DataGovAPI
+from ..dagster_utils.resources import (
+    DataGovAPI,
+    MotherDuck,
+    DuckDbConfig
+)
 from ..dagster_utils.ops import (
     op_list_S3_objects,
     op_upload_object_to_S3
@@ -52,7 +57,7 @@ def op_upload_hdb_resale_records_json_to_S3(
 ) -> None:
     logger = get_dagster_logger()
     filename = f"hdb_resale_records_{year_month}.json"
-    data = json.dumps(data)
+    data = json.dumps(data['result']['records'])
     op_upload_object_to_S3(
             s3_resource=s3_resource,
             file_object=data,
@@ -101,14 +106,45 @@ def op_extract_and_upload(
 
 
 @op
-def create_raw_schema(
+def op_initialize_db_and_table(
     context: OpExecutionContext,
-    duckdb: DuckDBResource
+    duckdb_config: DuckDbConfig,
+    duckdb: MotherDuck
 ) -> None:
-    '''
-    Create schema if it do not exists
-    '''
     with duckdb.get_connection() as conn:
-        conn.execute("create schema if not exists raw;")
-        context.log.info("Create schema if not exists statement issued.")
-    return None
+        conn.query(f"create database if not exists {duckdb_config.database};")
+        conn.query(f"create schema if not exists '{duckdb_config.database_schema}';")
+        conn.query(f"""
+            create table if not exists {duckdb_config.database}.{duckdb_config.database_schema}.raw__hdb_resale_records (
+                _id text,
+                month text,
+                town text,
+                flat_type text,
+                block text,
+                street_name text,
+                storey_range text,
+                floor_area_sqm text,
+                flat_model text,
+                lease_commence_date text,
+                remaining_lease text,
+                resale_price text,
+                unique (_id, month)
+            );
+        """)
+    context.log.info("Database and table initialized.")
+    return
+
+
+@op(ins={"ready": In(dagster_type=Nothing)})
+def op_copy_into_motherduck(
+    context: OpExecutionContext,
+    duckdb_config: DuckDbConfig,
+    duckdb: MotherDuck
+) -> None:
+    with duckdb.get_connection() as conn:
+        conn.query(f"""
+            insert or ignore into {duckdb_config.database}.{duckdb_config.database_schema}.raw__hdb_resale_records
+            select *
+            from 's3://{EnvVar("AMAZON_S3_BUCKET_NAME").get_value()}/{S3_PREFIX}/*.json'
+        """)
+    context.log.info("Insert into statement issued.")

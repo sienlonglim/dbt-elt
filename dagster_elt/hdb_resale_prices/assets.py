@@ -7,8 +7,8 @@ from ..dagster_utils.constants import DBT_MANIFEST_PATH
 
 
 @dbt_assets(manifest=DBT_MANIFEST_PATH)
-def build_all_assets(
+def hdb_dbt_asset(
     context: AssetExecutionContext,
     dbt: DbtCliResource
 ):
-    yield from dbt.cli(["build"], context=context).stream()
+    yield from dbt.cli(["build", "--select", "stg__hdb_resale_records"], context=context).stream()

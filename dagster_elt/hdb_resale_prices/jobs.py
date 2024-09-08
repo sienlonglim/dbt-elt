@@ -3,7 +3,8 @@ from dagster import job
 from .ops import (
     op_check_S3_file_coverage,
     op_extract_and_upload,
-    create_raw_schema
+    op_initialize_db_and_table,
+    op_copy_into_motherduck
 )
 
 
@@ -18,25 +19,8 @@ def job_S3_hdb_resale_records_json():
 
 @job
 def job_copyinto_duckdb():
-    create_raw_schema()
-
-
-# df = pd.DataFrame(data['result']['records'])
-
-# @asset(
-#     deps=[create_schema_table],
-#     group_name="hdb_resales",
-#     metadata={"dataset_name": "hdb_resales"}
-# )
-# def resale_prices(
-#     context: AssetExecutionContext
-# ) -> pd.DataFrame:
-#     '''
-#     Use DuckDB PandasIOManager to save pandas table directly into DuckDB as str types only
-#     '''
-#     df = pd.read_csv(
-#         f"data/latest_hdb_resales_{PREV_YEAR_MONTH}.csv",
-#         index_col=0,
-#         dtype=object
-#     )
-#     context.log.info(f"Reading csv file, total rows present: {len(df)}")
+    '''
+    Copy S3 json data into MotherDuck
+    '''
+    ready = op_initialize_db_and_table()
+    op_copy_into_motherduck(ready)

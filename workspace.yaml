@@ -1,4 +1,4 @@
 load_from:
-  - python_module: dagster_elt.dbt.definitions
+  # - python_module: dagster_elt.dbt.definitions
   - python_module: dagster_elt.hdb_resale_prices.definitions
-  - python_module: dagster_elt.weather.definitions
+  # - python_module: dagster_elt.weather.definitions

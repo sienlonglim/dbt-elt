@@ -36,12 +36,12 @@ dbt_elt:
 
 
 mother_duck:
-  target: dev
+  target: "{{ env_var('MOTHERDUCK_DATABASE') }}"
   outputs:
     dev:
       type: duckdb
-      schema: dev_sl
-      path: "md:my_db?motherduck_token={{env_var('MOTHERDUCK_TOKEN')}}"
+      database: dev
+      path: "md:dev?motherduck_token={{env_var('MOTHERDUCK_TOKEN')}}"
       threads: 1
       extensions: 
         - httpfs
@@ -52,8 +52,8 @@ mother_duck:
     
     prod:
       type: duckdb
-      schema: prod
-      path:  "md:my_db?motherduck_token={{env_var('MOTHERDUCK_TOKEN')}}"
+      database: prod
+      path:  "md:prod?motherduck_token={{env_var('MOTHERDUCK_TOKEN')}}"
       threads: 1
       extensions: 
         - httpfs

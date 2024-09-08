@@ -25,6 +25,3 @@ models:
     staging:
       +schema: staging
       +materialized: view
-    entity:
-      +schema: entity
-      +materialized: table

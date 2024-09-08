@@ -31,7 +31,7 @@ class DatabaseAccessObject():
         else:
             raise KeyError("Invalid db option chosen")
 
-    def query_db(self, query):
+    def query(self, query):
         if isinstance(self.con, sqlalchemy.engine.base.Engine):
             df = pd.read_sql(query, con=self.con)
         else:

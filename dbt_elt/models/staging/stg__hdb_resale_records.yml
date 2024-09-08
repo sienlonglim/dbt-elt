@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: stg__hdb_resale_records
+    schema: staging
+    description: "HDB resale records, each row is a sale record"
+    columns:
+      - name: "resale_year_month"
+        description: "year and month of rent approval (YYYY-mm)."
+      - name: "town"
+        description: "name of district."
+      - name: "block_number"
+        description: "block number (alphanumeric)."
+      - name: "street_name"
+        description: "street name."
+      - name: "storey_range"
+        description: "storey range."
+      - name: "floor_area_sqm"
+        description: "floor area of unit in square meters."
+      - name: "flat_model"
+        description: "flat model."
+      - name: "lease_commence_year"
+        description: "year where lease commenced."
+      - name: "remaining_lease_years"
+        description: "remaining lease in years."
+      - name: "resale_price"
+        description: "resale price rounded to thousand."
+
