@@ -1,13 +1,15 @@
 # CHANGELOG
 ## Plans
-- Explore MotherDuck for cloud data warehouse.
-- Explore Terraform.
-- Write unit tests.
-- Refactor weather data code.
+- Incorporate DBT in dagster
 - Build out DWH to mart
-- Build backend API
+- Refactor weather data code.
+- Write unit tests.
 
-## [2.1.0] dbt-dagster-duckdb with S3 lake (WIP)
+## [2.2.0] Added MotherDuck DWH with ingestion from S3
+- Added MotherDuck connection and to ingest files from S3
+- Added DBT models
+
+## [2.1.0] dbt-dagster-duckdb with S3 lake
 - Refactored dagster to individual code spaces.
 - Refactored asset for hdb data into ops and jobs.
 - Integrate S3 data store.
